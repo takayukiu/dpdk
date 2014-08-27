@@ -37,6 +37,7 @@
 #include <rte_ethdev.h>
 #include <rte_malloc.h>
 #include <rte_memcpy.h>
+#include <rte_spinlock.h>
 #include <rte_string_fns.h>
 #include <rte_cycles.h>
 #include <rte_kvargs.h>
@@ -231,10 +232,12 @@ eth_pcap_tx(void *queue,
 	struct rte_mbuf *mbuf;
 	struct pcap_tx_queue *tx_queue = queue;
 	uint16_t num_tx = 0;
+	static rte_spinlock_t tx_lock = RTE_SPINLOCK_INITIALIZER;
 
 	if (unlikely(nb_pkts == 0 || tx_queue->pcap == NULL))
 		return 0;
 
+	rte_spinlock_lock(&tx_lock);
 	for (i = 0; i < nb_pkts; i++) {
 		mbuf = bufs[i];
 		ret = pcap_sendpacket(tx_queue->pcap, (u_char*) mbuf->pkt.data,
@@ -247,6 +250,7 @@ eth_pcap_tx(void *queue,
 
 	tx_queue->tx_pkts += num_tx;
 	tx_queue->err_pkts += nb_pkts - num_tx;
+	rte_spinlock_unlock(&tx_lock);
 	return num_tx;
 }
 
@@ -677,7 +681,7 @@ rte_eth_from_pcaps(const char *name, pcap_t * const rx_queues[],
 		internals->rx_queue->pcap = rx_queues[i];
 	}
 	for (i = 0; i < nb_tx_queues; i++) {
-		internals->tx_queue->pcap = tx_queues[i];
+		internals->tx_queue[i].pcap = tx_queues[0];
 	}
 
 	eth_dev->rx_pkt_burst = eth_pcap_rx;
@@ -719,7 +723,7 @@ rte_pmd_pcap_devinit(const char *name, const char *params)
 		if (ret < 0)
 			return -1;
 
-		return rte_eth_from_pcaps(name, pcaps.pcaps, 1, pcaps.pcaps, 1,
+		return rte_eth_from_pcaps(name, pcaps.pcaps, 1, pcaps.pcaps, RTE_MAX_LCORE,
 				numa_node, kvlist);
 	}
 
