@@ -244,7 +244,7 @@ LDLIBS := $(call linkerprefix,$(LDLIBS))
 LDFLAGS := $(call linkerprefix,$(LDFLAGS))
 override EXTRA_LDFLAGS := $(call linkerprefix,$(EXTRA_LDFLAGS))
 O_TO_EXE = $(CC) $(CFLAGS) $(LDFLAGS_$(@)) \
-	-Wl,-Map=$(@).map,--cref -o $@ $(OBJS-y) $(LDFLAGS) $(EXTRA_LDFLAGS) $(LDLIBS)
+	-Wl,-Map=$(@).map,--cref -o $@ $(OBJS-y) $(LDFLAGS) $(LDLIBS) $(EXTRA_LDFLAGS)
 else
 O_TO_EXE = $(LD) $(LDFLAGS) $(LDFLAGS_$(@)) $(EXTRA_LDFLAGS) \
 	-Map=$(@).map --cref -o $@ $(OBJS-y) $(LDLIBS)
