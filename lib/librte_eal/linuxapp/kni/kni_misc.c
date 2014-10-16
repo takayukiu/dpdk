@@ -354,6 +354,8 @@ kni_ioctl_create(unsigned int ioctl_num, unsigned long ioctl_param)
 		return -EBUSY;
 	}
 
+	dev_net_set(net_dev, get_net_ns_by_pid(current->pid));
+
 	kni = netdev_priv(net_dev);
 
 	kni->net_dev = net_dev;
